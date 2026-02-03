@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+
+  snmp-simulator:
+    image: polinux/snmpd
+    container_name: snmp-simulator
+    ports:
+      - "161:161/udp"
+    environment:
+      - SNMP_COMMUNITY=public
+    restart: unless-stopped
+
+  snmp-app:
+    build: .
+    container_name: snmp-monitor
+    ports:
+      - "8080:8080"
+    depends_on:
+      - snmp-simulator
+    restart: unless-stopped

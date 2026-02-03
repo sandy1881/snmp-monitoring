@@ -1,12 +1,8 @@
 package com.example.snmp_monitor.controller;
 
+import com.example.snmp_monitor.model.SnmpResponse;
 import com.example.snmp_monitor.service.SnmpService;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/snmp")
@@ -19,23 +15,33 @@ public class SnmpController {
     }
 
     @GetMapping("/collect")
-    public Map<String, Object> collectSnmp(
-            @RequestParam String ip,
+    public SnmpResponse collectSnmp(
+            @RequestParam(defaultValue = "snmp-simulator") String ip,
             @RequestParam(defaultValue = "public") String community
-    ) throws IOException {
+    ) {
 
-        Map<String, Object> result = new HashMap<>();
+        SnmpResponse response = new SnmpResponse();
 
-        result.put("sysObjectID", snmpService.snmpGet(ip, community, "1.3.6.1.2.1.1.2.0"));
-        result.put("hostname", snmpService.snmpGet(ip, community, "1.3.6.1.2.1.1.5.0"));
-        result.put("interfaceCount", snmpService.snmpGet(ip, community, "1.3.6.1.2.1.2.1.0"));
+        try {
+            response.setSysObjectID(
+                    snmpService.snmpGet(ip, community, "1.3.6.1.2.1.1.2.0"));
 
-        List<String> ifTypes = snmpService.snmpWalk(ip, community, "1.3.6.1.2.1.2.2.1.3");
-        result.put("interfaceTypes", ifTypes);
+            response.setHostname(
+                    snmpService.snmpGet(ip, community, "1.3.6.1.2.1.1.5.0"));
 
-        List<String> equipment = snmpService.snmpWalk(ip, community, "1.3.6.1.2.1.47.1.1.1.1.2");
-        result.put("equipmentDetails", equipment);
+            response.setInterfaceCount(
+                    snmpService.snmpGet(ip, community, "1.3.6.1.2.1.2.1.0"));
 
-        return result;
+            response.setInterfaceTypes(
+                    snmpService.snmpWalk(ip, community, "1.3.6.1.2.1.2.2.1.3"));
+
+            response.setEquipments(
+                    snmpService.snmpWalk(ip, community, "1.3.6.1.2.1.47.1.1.1.1.2"));
+
+        } catch (Exception e) {
+            response.setError("SNMP collection failed: " + e.getMessage());
+        }
+
+        return response;
     }
 }
